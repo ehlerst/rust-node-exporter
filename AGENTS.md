@@ -40,9 +40,9 @@ single-user project; the code assumes THIS machine (see Pitfalls).
   (snake_case clap naming), a guarded `contains` block in `handle_connection`,
   and optionally an `init()` call in `main`.
 - Error handling is `expect`/`panic` on hard environment failures; no custom
-  error types. Collectors keep state in `lazy_static!` `Mutex<Option<...>>`
+  error types. Collectors keep state in `std::sync::LazyLock` `Mutex<Option<...>>`
   (see `amd_radeontop.rs`).
-- Parsing is regex-based (`regex` crate) with patterns in `lazy_static!`
+- Parsing is regex-based (`regex` crate) with patterns in `LazyLock`
   statics; radeontop output is deserialized with serde/quick-xml where
   applicable.
 - Commits: short imperative summaries, no conventional-commit prefixes
