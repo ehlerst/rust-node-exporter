@@ -1,0 +1,46 @@
+{
+  "rust_common": {
+    "name": "rust-node-exporter (common collectors)",
+    "startup_ms": 16.3,
+    "rss_after_warmup_kb": 4204,
+    "peak_rss_kb": 4204,
+    "cpu_ms_per_scrape": 0.5,
+    "latency_mean_ms": 1.09,
+    "latency_p95_ms": 1.61,
+    "latency_max_ms": 1.7,
+    "body_bytes": 15234,
+    "metric_lines": 404
+  },
+  "node_common": {
+    "name": "node_exporter 1.13.1 (common collectors)",
+    "startup_ms": 77.3,
+    "rss_after_warmup_kb": 21528,
+    "peak_rss_kb": 21528,
+    "cpu_ms_per_scrape": 5.5,
+    "latency_mean_ms": 28.33,
+    "latency_p95_ms": 30.95,
+    "latency_max_ms": 36.47,
+    "body_bytes": 35510,
+    "metric_lines": 337
+  },
+  "node_defaults": {
+    "name": "node_exporter 1.13.1 (all defaults)",
+    "startup_ms": 100.0,
+    "rss_after_warmup_kb": 22820,
+    "peak_rss_kb": 22820,
+    "cpu_ms_per_scrape": 21.1,
+    "latency_mean_ms": 42.64,
+    "latency_p95_ms": 50.08,
+    "latency_max_ms": 52.49,
+    "body_bytes": 140945,
+    "metric_lines": 1582
+  },
+  "binary_sizes": {
+    "rust-node-exporter": 2459680,
+    "node_exporter": 25529539
+  },
+  "versions": {
+    "rust-node-exporter": "0.2.5 (rustc 1.100.0, lto release)",
+    "node_exporter": "1.13.1 (go1.27.4)"
+  }
+}

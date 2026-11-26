@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rust-node-exporter vs prometheus/node_exporter — benchmarks</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0 auto; max-width: 880px; padding: 2.5rem 1.25rem 5rem;
+         background: #0d1117; color: #c9d1d9; line-height: 1.65;
+         font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { color: #e6edf3; font-size: 1.9rem; margin-bottom: .2rem; }
+  h2 { color: #e6edf3; font-size: 1.25rem; margin-top: 2.6rem; border-bottom: 1px solid #30363d; padding-bottom: .4rem; }
+  .muted { color: #8b949e; font-size: .95rem; }
+  .badge { display: inline-block; background: #161b22; border: 1px solid #30363d;
+           border-radius: 999px; padding: .1rem .7rem; font-size: .8rem; color: #8b949e; margin-right: .4rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: .93rem; }
+  th, td { border: 1px solid #30363d; padding: .45rem .7rem; text-align: left; }
+  th { background: #161b22; color: #e6edf3; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .highlight { color: #7ee787; font-weight: 600; }
+  .chart { background: #0d1117; border-radius: 8px; margin: .8rem 0; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  pre { background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+        padding: .8rem 1rem; overflow-x: auto; font-size: .85rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .note { border-left: 3px solid #d29922; background: #161b22; padding: .6rem .9rem;
+          border-radius: 0 6px 6px 0; font-size: .9rem; margin: 1rem 0; }
+  footer { margin-top: 3rem; color: #8b949e; font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<h1>rust-node-exporter vs prometheus/node_exporter</h1>
+<p class="muted">Real benchmarks, run on the author's desktop ·
+  <span class="badge">measured</span><span class="badge">same machine, same request pattern</span>
+</p>
+
+<p><strong>rust-node-exporter</strong> is a small single-binary Prometheus exporter written
+in Rust that exposes custom desktop hardware metrics (NZXT Kraken AIO over hidapi,
+lm_sensors via FFI, hddtemp, nvidia-smi, radeontop GPU stats) alongside the standard
+/proc-based node metrics.</p>
+
+<p>This page compares it against <a href="https://github.com/prometheus/node_exporter">
+prometheus/node_exporter</a> using <strong>measured numbers, not hand-waving</strong>. Both
+binaries ran on the same machine, on localhost, and were scraped with the identical request
+pattern (100 sequential scrapes after a 20-scrape warmup).</p>
+
+<h2>Apples-to-apples: the overlapping collectors</h2>
+
+<p>For a fair head-to-head, both exporters were started with <em>only the collectors both
+implement</em>: <code>meminfo</code>, <code>netdev</code>, <code>stat</code>, and hardware
+sensors (<code>hwmon</code> for node_exporter, <code>lm_sensors</code> FFI for
+rust-node-exporter).</p>
+
+<table>
+  <tr><th>Metric</th><th>rust-node-exporter 0.2.5</th><th>node_exporter 1.13.1</th><th>Rust advantage</th></tr>
+  <tr><td>Runtime memory (RSS, after warmup)</td>
+      <td class="num highlight">4.1&nbsp;MB</td><td class="num">21.0&nbsp;MB</td>
+      <td class="num">5.1&times; less</td></tr>
+  <tr><td>CPU time per scrape</td>
+      <td class="num highlight">0.5&nbsp;ms</td><td class="num">5.5&nbsp;ms</td>
+      <td class="num">11&times; less</td></tr>
+  <tr><td>Scrape latency (mean of 100)</td>
+      <td class="num highlight">1.1&nbsp;ms</td><td class="num">28.3&nbsp;ms</td>
+      <td class="num">26&times; faster</td></tr>
+  <tr><td>Startup to first successful scrape</td>
+      <td class="num highlight">16&nbsp;ms</td><td class="num">77&nbsp;ms</td>
+      <td class="num">4.7&times; faster</td></tr>
+  <tr><td>Binary size</td>
+      <td class="num highlight">2.3&nbsp;MB (lto)</td><td class="num">25.5&nbsp;MB</td>
+      <td class="num">10&times; smaller</td></tr>
+  <tr><td>Metric lines exposed</td>
+      <td class="num">404</td><td class="num">337</td><td class="num">&mdash;</td></tr>
+</table>
+
+<h2>The charts</h2>
+
+<div class="chart"><img src="assets/memory.svg" alt="bar chart assets/memory.svg" loading="lazy"></div>
+<div class="chart"><img src="assets/cpu.svg" alt="bar chart assets/cpu.svg" loading="lazy"></div>
+<div class="chart"><img src="assets/latency.svg" alt="bar chart assets/latency.svg" loading="lazy"></div>
+<div class="chart"><img src="assets/binary.svg" alt="bar chart assets/binary.svg" loading="lazy"></div>
+
+<h2>For context: node_exporter as shipped</h2>
+
+<p>node_exporter's default configuration runs ~50 collectors. That is not apples-to-apples —
+it does 5&times; more work and produces 3.7&times; the output — but it shows the footprint of
+the tool most people actually run:</p>
+
+<table>
+  <tr><th>Metric</th><th>rust-node-exporter 0.2.5</th><th>node_exporter 1.13.1 (all defaults)</th></tr>
+  <tr><td>Runtime memory (RSS)</td><td class="num highlight">4.1&nbsp;MB</td><td class="num">22.3&nbsp;MB</td></tr>
+  <tr><td>CPU time per scrape</td><td class="num highlight">0.5&nbsp;ms</td><td class="num">21.1&nbsp;ms</td></tr>
+  <tr><td>Scrape latency (mean)</td><td class="num highlight">1.1&nbsp;ms</td><td class="num">42.6&nbsp;ms</td></tr>
+  <tr><td>Response size</td><td class="num">14.9&nbsp;KB</td><td class="num">137.6&nbsp;KB</td></tr>
+  <tr><td>Metric lines exposed</td><td class="num">404</td><td class="num">1582</td></tr>
+</table>
+
+<h2>Methodology</h2>
+<ul>
+  <li><strong>Binaries:</strong> rust-node-exporter 0.2.5 (rustc 1.100.0, <code>--release</code>
+      with <code>lto = true</code>) vs node_exporter 1.13.1 official release (go1.27.4).</li>
+  <li><strong>Memory:</strong> <code>VmRSS</code> after the 20-scrape warmup, read from
+      <code>/proc/&lt;pid&gt;/status</code>.</li>
+  <li><strong>CPU per scrape:</strong> <code>utime+stime</code> deltas from
+      <code>/proc/&lt;pid&gt;/stat</code> divided by 100 scrapes.</li>
+  <li><strong>Latency:</strong> wall-clock from TCP connect to full body read, summed over
+      100 sequential scrapes on 127.0.0.1 (no keep-alive) — the same bare-HTTP client for
+      both. p95/max values in <a href="benchmark/results.json">results.json</a>.</li>
+  <li><strong>Startup:</strong> spawn to first scrape returning HTTP 200 with a non-empty body.</li>
+  <li><strong>Stability:</strong> the full run was executed twice; every headline number
+      varied by less than 3% between runs.</li>
+</ul>
+
+<h2>Read the small print</h2>
+<div class="note">Honest caveats, because numbers without context are lies:
+<ul>
+  <li>These are single-machine numbers (x86_64 Linux, localhost scrapes). Air-gap your
+      expectations accordingly.</li>
+  <li>The exporters are not functionally equal: node_exporter exposes ~50 default collectors
+      (~1,580 metric lines) vs 4 collector families here (~400 lines). The overlap comparison
+      is the fair one; the "all defaults" table shows node_exporter doing 5&times; the work.</li>
+  <li>This exporter serves hand-rolled HTTP without keep-alive or gzip; node_exporter uses
+      the Go net/http stack with gzip. A production Prometheus scrapes with keep-alive, which
+      narrows latency gaps.</li>
+  <li>This exporter panics an entire scrape if a collector's source is missing (e.g. the
+      hddtemp daemon or a regex mismatch); node_exporter degrades per-collector and reports
+      <code>node_scrape_collector_success</code>. That robustness gap is what the CPU/RAM
+      savings buy.</li>
+</ul>
+</div>
+
+<h2>Reproduce it</h2>
+<p>The harness, chart generator, and raw results are committed under
+<a href="benchmark/">docs/benchmark/</a>:</p>
+<pre><code># with node_exporter 1.13.1 extracted next to it
+python3 docs/benchmark/bench.py        # writes results.json
+python3 docs/benchmark/gen_svg.py      # regenerates the SVGs</code></pre>
+
+<footer>
+Last benchmarked 2026-11-25 · <a href="https://github.com/kdarkhan/rust-node-exporter">source</a> ·
+numbers generated by <code>docs/benchmark/bench.py</code>, never edited by hand.
+</footer>
+
+</body>
+</html>
