@@ -1,3 +1,6 @@
+// Allow names from bindgen-generated bindings (e.g. `FILE`) to be non-idiomatic.
+#![allow(clippy::upper_case_acronyms)]
+
 extern crate quick_xml;
 extern crate serde;
 mod helpers;
